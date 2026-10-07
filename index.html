@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>2026年國際佛光會中華總會中一區水湳分會-會員分組一覽表</title>
     <style>
-        /* 佛教雅緻風格 & 老人老花眼友善（極大字、高對比）*/
         body {
-            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+            font-family: "PingFang TC", "Microsoft JhengHei", "微軟正黑體", sans-serif;
             background-color: #fdfbf5;
             color: #111111;
             margin: 0;
@@ -24,14 +23,14 @@
         }
 
         header h1 {
-            font-size: 2.2rem;
+            font-size: 2.1rem;
             margin: 0 0 10px 0;
             font-weight: bold;
             line-height: 1.3;
         }
 
         .motto {
-            font-size: 1.25rem;
+            font-size: 1.2rem;
             color: #f7d277;
             margin: 0;
             letter-spacing: 2px;
@@ -40,17 +39,16 @@
 
         .intro {
             text-align: center;
-            font-size: 1.2rem;
-            color: #555555;
-            padding: 20px 10px;
+            font-size: 1.15rem;
+            color: #665544;
+            padding: 16px 10px;
             font-weight: bold;
         }
 
-        /* 響應式網格 (RWD) */
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            padding: 10px;
+            padding: 10px 15px;
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
@@ -61,50 +59,43 @@
             border: 3px solid #cdb98c;
             border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.06);
         }
 
         .card-header {
             background-color: #f2e9d4;
             color: #73230f;
-            padding: 15px;
-            font-size: 1.6rem;
+            padding: 14px;
+            font-size: 1.55rem;
             font-weight: bold;
             text-align: center;
             border-bottom: 3px solid #cdb98c;
+            letter-spacing: 1px;
         }
 
         .card-body {
-            padding: 20px;
+            padding: 18px 16px;
             display: grid;
-            grid-template-columns: 1fr 1fr; /* 左右雙排 */
-            gap: 15px 10px;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 8px;
         }
 
         .member {
-            font-size: 1.5rem; /* 字體再放大！列印與手機看都極為清晰 */
+            font-size: 1.45rem;
             font-weight: bold;
             display: flex;
             align-items: center;
+            white-space: nowrap;
         }
 
         .num {
             color: #8c5020;
-            margin-right: 8px;
-            font-size: 1.3rem;
+            margin-right: 6px;
+            font-size: 1.25rem;
             font-weight: normal;
             display: inline-block;
-            width: 30px;
+            width: 28px;
             text-align: right;
-        }
-
-        .loading {
-            grid-column: 1 / -1;
-            text-align: center;
-            font-size: 1.5rem;
-            color: #731e0f;
-            padding: 40px;
-            font-weight: bold;
         }
 
         .blessing-card {
@@ -128,12 +119,20 @@
 
         footer {
             text-align: center;
-            padding: 40px 15px;
-            color: #555555;
-            font-size: 1.1rem;
-            border-top: 1px solid #e0e0e0;
+            padding: 35px 15px;
+            color: #666666;
+            font-size: 1.05rem;
+            border-top: 1px solid #e2ded5;
             margin-top: 40px;
             background-color: #f7f5f0;
+            line-height: 1.8;
+        }
+
+        @media (max-width: 480px) {
+            header h1 { font-size: 1.6rem; }
+            .motto { font-size: 0.95rem; }
+            .card-header { font-size: 1.4rem; }
+            .member { font-size: 1.35rem; }
         }
     </style>
 </head>
@@ -149,7 +148,7 @@
     </div>
 
     <div class="container" id="groups-container">
-        <div class="loading">正在即時讀取最新會員名冊，請稍候...</div>
+        <!-- 名單由腳本動態載入 -->
     </div>
 
     <footer>
@@ -158,76 +157,116 @@
     </footer>
 
     <script>
-        // 【在這裡替換成您自己的 Google 試算表 ID】
-        const SHEET_ID = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShBVWbbjqU0MDbY4xyh96haAAEsda4xXjmfD3oMIkOiL172-Wjv7HIk2Xs-gq-cksfHmXMxDu5w72i/pubhtml'; 
-        const SHEET_URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv`;
+        // 【重要】請將此處替換為您的 Google 試算表 ID
+        const SHEET_ID = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShBVWbbjqU0MDbY4xyh96haAAEsda4xXjmfD3oMIkOiL172-Wjv7HIk2Xs-gq-cksfHmXMxDu5w72i/pubhtml';
 
-        // 即時抓取試算表，並解析生成高對比、超大字 HTML
-        async function fetchAndRenderData() {
-            try {
-                const response = await fetch(SHEET_URL);
-                const csvData = await response.text();
-                const lines = csvData.split('\n').map(line => 
-                    line.split(',').map(cell => cell.replace(/^"(.*)"$/, '$1').trim())
-                );
+        // 離線備用名單（當 Google 試算表尚未設定或網路無法連線時使用）
+        const fallbackData = {
+            "第一組": ["王惠玉", "李興農", "陳葉", "翁秀月", "楊春棗", "張秀祝", "蔡曉梅", "林敬堯", "何依鈴", "黃菳棠", "蔡勝男", "王福義", "盧采絨", "郭秋蘭"],
+            "第二組": ["王露英", "陳怡", "王台英", "林金月", "沈佑蓮", "陳成添", "林秋錦", "楊張金華", "劉繡菊", "陳玲玲", "林怡璇", "李淑麗", "魏美貴", "盧亭琪", "劉銀容", "潘其彥", "潘林長梅", "潘金華", "潘雅婷", "潘雅嵐"],
+            "第三組": ["陳宇", "陳賴月桂", "鍾張秀娟", "鍾金雄", "詹清棋", "李楊素玉", "唐其應", "林建成", "柯炳榮", "黃春英", "李佩穎", "李佩安", "李燊銘", "黃麗惠", "王維慈"],
+            "第四組": ["卜彩珠", "楊王德", "孟龍蕙華", "陳許玉昭", "蔡秀定", "陳明珠", "林茂村", "郭金朝", "李彩華", "王瑞嬌", "邱延招", "鄧潔芳", "陳麗芳", "呂許鳳娥", "黃宥蓁", "陳魏秀英", "何玲玉", "卜彩燕", "張中原"],
+            "第五組": ["姜林鳳嬌", "蔡桂杏", "劉淑梅", "麥李連", "潘貴蘭", "薛張寶玉", "曾淑娟", "許淑玫", "陳呂玉勸", "陳文正", "張瓊月"],
+            "第六組": ["王世英", "王陳春枝", "郭月緞", "李福連", "林麗卿", "陳政文", "王珮如", "李振慧", "鄧水妹", "雷秀", "李張月華", "李恒文", "李皖如", "王珮娟", "陳逸潔", "陳雨柔"],
+            "第七組": ["鄭素蘭", "耿智光", "耿智秋", "耿智琳", "林俊孝", "程慕洵", "賴姿蓉", "徐桂英", "蔣月鳳", "何玉佩", "林秀真", "吳佳穎", "林春成", "江茂亮", "蕭立華", "林瓊瑤", "蔡慧娟", "詹勝雄", "吳湘鈞", "吳宜臻"],
+            "第八組": ["謝秋屏", "何明芳", "陳麗霞", "韓魯閣", "閻玉明", "謝美華", "陳錦讀", "何民雄", "賴宜蓁", "廖本發", "洪採遠", "陳清枝", "蘇美玉", "盧邱阿菊", "陳逸潔", "陳雨柔"],
+            "第九組": ["張琬婷", "呂威霖", "彭千瑀", "林閩洲", "周欣育", "陳麗寬", "邱林貴美", "邱娓慧", "吳靜玉", "鄭林貴豐", "黃宸緯"],
+            "第十組": ["陳月汝", "曾忠信", "黃純真", "楊李金蘭", "徐茂雄", "洪榆晴", "紀陳貴英", "江馥珊", "邱楊金治", "劉惠婷", "賴淑貞", "靳安靜", "陳麗如"],
+            "第十一組": ["林貴英", "李貴雲", "李貴霞", "高映晨", "蘇漆鈁", "賴明章", "廖千花", "吳嘉華", "邱蕾", "鄒湘雲", "王云芳", "李貴容", "陳李貴香", "吳桂櫻", "江麗英"],
+            "第十二組": ["李麗琴", "林秀媛", "黃鈺茹", "黃鈺琪", "林秀燕", "林呈龍", "許立育", "錢靖芬", "錢靖華", "陳儒樺", "蔡素靜"],
+            "第十三組": ["楊淑珍", "楊秀屏", "張寶泉", "陳盈蓁", "陳春竹", "詹春蘭", "劉金卿", "侯惠玲", "賴金蓮", "鐘蔡清子", "彭月梅"],
+            "第十四組": ["吳儿晴", "黃秋玲", "覃奕為", "徐英英", "賴萬得", "蔡美香"],
+            "第十五組": ["石秀惠", "林佩勳", "廖淑京", "彭秋蘭", "李藍美妹", "林群凌", "賴嘉俊", "曾瓊瑩", "張阿鑾", "黃銀盾", "黃瑞玉", "黃花", "王西"],
+            "第十六組": ["朱金鳳", "朱何玉李", "羅秋菊", "江秀罕", "吳美容", "黃貴美", "邱貴英", "賴惠雲", "倪才清", "劉秀竹", "王姿蓉", "羅秀珍"],
+            "第十七組": ["陳美玉", "許文山", "謝佩璇", "林麗真", "余式莉", "楊振達", "鍾東本", "張桂蘭", "張連足", "高信增", "溫妤嫻", "陳美鴛", "陳香樺", "洪秋英"],
+            "第十八組": ["黃淑清", "吳秉勳", "吳俊億", "林洪阿好", "林李鳳抱", "張瑞珠", "劉月森", "蔡紅枝", "許世芳", "徐寧", "林素月", "葉韋君", "鄭如惠"],
+            "第十九組": ["譚莉", "張宇文", "張宇昇", "曾婉婷", "徐振筠", "詹沐澄", "李美惠", "李佩芬", "鍾淑芬", "張容溱"]
+        };
 
-                // 解析分組資料 (A:組別, B:序號, C:姓名)
-                const groups = {};
-                for (let i = 1; i < lines.length; i++) {
-                    const [group, num, name] = lines[i];
-                    if (!group || !name) continue;
-                    if (!groups[group]) groups[group] = [];
-                    groups[group].push({ num, name });
-                }
+        function render(groups) {
+            const container = document.getElementById('groups-container');
+            container.innerHTML = '';
 
-                const container = document.getElementById('groups-container');
-                container.innerHTML = ''; // 移除 loading 字樣
+            Object.keys(groups).forEach(groupName => {
+                const members = groups[groupName];
+                const card = document.createElement('div');
+                card.className = 'card';
 
-                // 產生每組的卡片
-                Object.keys(groups).forEach(groupName => {
-                    const members = groups[groupName];
-                    
-                    const card = document.createElement('div');
-                    card.className = 'card';
+                const header = document.createElement('div');
+                header.className = 'card-header';
+                header.innerText = `【 ${groupName} 】 (${members.length}人)`;
+                card.appendChild(header);
 
-                    const header = document.createElement('div');
-                    header.className = 'card-header';
-                    header.innerText = `${groupName} (${members.length}人)`;
-                    card.appendChild(header);
+                const body = document.createElement('div');
+                body.className = 'card-body';
 
-                    const body = document.createElement('div');
-                    body.className = 'card-body';
-
-                    members.forEach(m => {
-                        const memberDiv = document.createElement('div');
-                        memberDiv.className = 'member';
-                        memberDiv.innerHTML = `<span class="num">${m.num}.</span>${m.name}`;
-                        body.appendChild(memberDiv);
-                    });
-
-                    card.appendChild(body);
-                    container.appendChild(card);
+                members.forEach((name, idx) => {
+                    const memberDiv = document.createElement('div');
+                    memberDiv.className = 'member';
+                    memberDiv.innerHTML = `<span class="num">${idx + 1}.</span>${name}`;
+                    body.appendChild(memberDiv);
                 });
 
-                // 補上最後的福慧增長祝福卡
-                const blessingCard = document.createElement('div');
-                blessingCard.className = 'blessing-card';
-                blessingCard.innerHTML = `
-                    <div class="blessing-text">
-                        🌸 身心自在<br>福慧增長 🌸<br>
-                        <span style="font-size: 1.25rem; color: #b48214;">水湳分會全體敬祝</span>
-                    </div>
-                `;
-                container.appendChild(blessingCard);
+                card.appendChild(body);
+                container.appendChild(card);
+            });
 
-            } catch (error) {
-                console.error("載入失敗：", error);
-                document.getElementById('groups-container').innerHTML = 
-                    `<div class="loading" style="color: red;">讀取名冊失敗，請確認網路連線或稍後再試。</div>`;
+            const blessingCard = document.createElement('div');
+            blessingCard.className = 'blessing-card';
+            blessingCard.innerHTML = `
+                <div class="blessing-text">
+                    🌸 身心自在<br>福慧增長 🌸<br>
+                    <span style="font-size: 1.25rem; color: #b48214;">水湳分會全體敬祝</span>
+                </div>
+            `;
+            container.appendChild(blessingCard);
+        }
+
+        // 動態從 Google 試算表拉取最新名冊
+        async function loadData() {
+            // 先顯示基礎名單，避免白畫面
+            render(fallbackData);
+
+            if (!SHEET_ID || SHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
+                return;
+            }
+
+            const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+
+            try {
+                const res = await fetch(csvUrl);
+                if (!res.ok) throw new Error("Fetch failed");
+                const text = await res.text();
+                
+                // 檢查是否取得有效 CSV 格式（防止抓到登入頁或腳本）
+                if (text.includes("<!DOCTYPE html>") || text.includes("google-site-verification")) {
+                    console.warn("試算表權限可能未設為公開，維持顯示預設資料。");
+                    return;
+                }
+
+                const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                const dynamicGroups = {};
+
+                // 試算表欄位順序：A欄為組別、B欄為序號(或不填)、C欄為姓名
+                for (let i = 1; i < lines.length; i++) {
+                    const cols = lines[i].split(',').map(s => s.replace(/^"(.*)"$/, '$1').trim());
+                    const group = cols[0];
+                    const name = cols.length >= 3 ? cols[2] : cols[1]; // 若只有兩欄則取第二欄
+
+                    if (!group || !name) continue;
+                    if (!dynamicGroups[group]) dynamicGroups[group] = [];
+                    dynamicGroups[group].push(name);
+                }
+
+                if (Object.keys(dynamicGroups).length > 0) {
+                    render(dynamicGroups);
+                }
+            } catch (err) {
+                console.warn("無法取得線上試算表，維持顯示內建名冊：", err);
             }
         }
 
-        fetchAndRenderData();
+        loadData();
     </script>
 </body>
 </html>
