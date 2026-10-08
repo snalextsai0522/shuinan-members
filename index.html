@@ -45,6 +45,13 @@
             font-weight: bold;
         }
 
+        .status-bar {
+            text-align: center;
+            font-size: 0.95rem;
+            color: #887766;
+            margin-bottom: 10px;
+        }
+
         .container {
             max-width: 1600px;
             margin: 0 auto;
@@ -146,6 +153,7 @@
     <div class="intro">
         ※ 各位長輩與會員，您可以用手指在手機螢幕上「放大」觀看您的組別！ ※
     </div>
+    <div id="status-bar" class="status-bar">資料同步中...</div>
 
     <div class="container" id="groups-container">
         <!-- 名單由腳本動態載入 -->
@@ -158,9 +166,9 @@
 
     <script>
         // 【重要】請將此處替換為您的 Google 試算表 ID
-        const SHEET_ID = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vShBVWbbjqU0MDbY4xyh96haAAEsda4xXjmfD3oMIkOiL172-Wjv7HIk2Xs-gq-cksfHmXMxDu5w72i/pubhtml';
+        const SHEET_ID = 'YOUR_SPREADSHEET_ID_HERE';
 
-        // 離線備用名單（當 Google 試算表尚未設定或網路無法連線時使用）
+        // 離線備用名單
         const fallbackData = {
             "第一組": ["王惠玉", "李興農", "陳葉", "翁秀月", "楊春棗", "張秀祝", "蔡曉梅", "林敬堯", "何依鈴", "黃菳棠", "蔡勝男", "王福義", "盧采絨", "郭秋蘭"],
             "第二組": ["王露英", "陳怡", "王台英", "林金月", "沈佑蓮", "陳成添", "林秋錦", "楊張金華", "劉繡菊", "陳玲玲", "林怡璇", "李淑麗", "魏美貴", "盧亭琪", "劉銀容", "潘其彥", "潘林長梅", "潘金華", "潘雅婷", "潘雅嵐"],
@@ -169,7 +177,7 @@
             "第五組": ["姜林鳳嬌", "蔡桂杏", "劉淑梅", "麥李連", "潘貴蘭", "薛張寶玉", "曾淑娟", "許淑玫", "陳呂玉勸", "陳文正", "張瓊月"],
             "第六組": ["王世英", "王陳春枝", "郭月緞", "李福連", "林麗卿", "陳政文", "王珮如", "李振慧", "鄧水妹", "雷秀", "李張月華", "李恒文", "李皖如", "王珮娟", "陳逸潔", "陳雨柔"],
             "第七組": ["鄭素蘭", "耿智光", "耿智秋", "耿智琳", "林俊孝", "程慕洵", "賴姿蓉", "徐桂英", "蔣月鳳", "何玉佩", "林秀真", "吳佳穎", "林春成", "江茂亮", "蕭立華", "林瓊瑤", "蔡慧娟", "詹勝雄", "吳湘鈞", "吳宜臻"],
-            "第八組": ["謝秋屏", "何明芳", "陳麗霞", "韓魯閣", "閻玉明", "謝美華", "陳錦讀", "何民雄", "賴宜蓁", "廖本發", "洪採遠", "陳清枝", "蘇美玉", "盧邱阿菊", "陳逸潔", "陳雨柔"],
+            "第八組": ["謝秋屏", "何明芳", "陳麗霞", "韓魯閣", "閻玉明", "謝美華", "陳錦讀", "何民雄", "賴宜蓁", "廖本發", "洪採遠", "陳清枝", "蘇美玉", "盧邱阿菊"],
             "第九組": ["張琬婷", "呂威霖", "彭千瑀", "林閩洲", "周欣育", "陳麗寬", "邱林貴美", "邱娓慧", "吳靜玉", "鄭林貴豐", "黃宸緯"],
             "第十組": ["陳月汝", "曾忠信", "黃純真", "楊李金蘭", "徐茂雄", "洪榆晴", "紀陳貴英", "江馥珊", "邱楊金治", "劉惠婷", "賴淑貞", "靳安靜", "陳麗如"],
             "第十一組": ["林貴英", "李貴雲", "李貴霞", "高映晨", "蘇漆鈁", "賴明章", "廖千花", "吳嘉華", "邱蕾", "鄒湘雲", "王云芳", "李貴容", "陳李貴香", "吳桂櫻", "江麗英"],
@@ -222,47 +230,62 @@
             container.appendChild(blessingCard);
         }
 
-        // 動態從 Google 試算表拉取最新名冊
+        // 動態即時同步函式（無 CORS 阻擋）
         async function loadData() {
-            // 先顯示基礎名單，避免白畫面
             render(fallbackData);
 
             if (!SHEET_ID || SHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
+                document.getElementById('status-bar').innerText = "提示：目前顯示預設離線名冊（尚未設定試算表 ID）";
                 return;
             }
 
-            const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv`;
+            // 加上時間戳記避免瀏覽器快取舊資料
+            const timestamp = new Date().getTime();
+            const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${timestamp}`;
 
             try {
-                const res = await fetch(csvUrl);
-                if (!res.ok) throw new Error("Fetch failed");
-                const text = await res.text();
-                
-                // 檢查是否取得有效 CSV 格式（防止抓到登入頁或腳本）
-                if (text.includes("<!DOCTYPE html>") || text.includes("google-site-verification")) {
-                    console.warn("試算表權限可能未設為公開，維持顯示預設資料。");
-                    return;
+                const res = await fetch(gvizUrl);
+                if (!res.ok) throw new Error("網路連線異常");
+                const rawText = await res.text();
+
+                // 移除 Google GViz 包裝字樣，精確截取 JSON 字串
+                const jsonMatch = rawText.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/);
+                if (!jsonMatch || !jsonMatch[1]) {
+                    throw new Error("試算表回傳格式錯誤，請確認已設定『知道連結的任何人均可檢視』");
                 }
 
-                const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                const data = JSON.parse(jsonMatch[1]);
+                const rows = data.table.rows;
                 const dynamicGroups = {};
 
-                // 試算表欄位順序：A欄為組別、B欄為序號(或不填)、C欄為姓名
-                for (let i = 1; i < lines.length; i++) {
-                    const cols = lines[i].split(',').map(s => s.replace(/^"(.*)"$/, '$1').trim());
-                    const group = cols[0];
-                    const name = cols.length >= 3 ? cols[2] : cols[1]; // 若只有兩欄則取第二欄
+                rows.forEach(row => {
+                    if (!row.c) return;
+                    // A欄位(c[0]): 組別；C欄位(c[2])或B欄位(c[1]): 姓名
+                    const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
+                    let nameVal = "";
 
-                    if (!group || !name) continue;
-                    if (!dynamicGroups[group]) dynamicGroups[group] = [];
-                    dynamicGroups[group].push(name);
-                }
+                    if (row.c[2] && row.c[2].v) {
+                        nameVal = row.c[2].v.toString().trim();
+                    } else if (row.c[1] && row.c[1].v) {
+                        nameVal = row.c[1].v.toString().trim();
+                    }
+
+                    // 略過標題列（如包含「組別」或「姓名」字樣）
+                    if (!groupVal || !nameVal || groupVal.includes("組別") || nameVal.includes("姓名")) return;
+
+                    if (!dynamicGroups[groupVal]) dynamicGroups[groupVal] = [];
+                    dynamicGroups[groupVal].push(nameVal);
+                });
 
                 if (Object.keys(dynamicGroups).length > 0) {
                     render(dynamicGroups);
+                    document.getElementById('status-bar').innerText = `● 資料已即時同步（最後更新時間：${new Date().toLocaleTimeString()}）`;
+                } else {
+                    document.getElementById('status-bar').innerText = "提示：試算表內無有效名單資料，維持預設名冊。";
                 }
             } catch (err) {
                 console.warn("無法取得線上試算表，維持顯示內建名冊：", err);
+                document.getElementById('status-bar').innerText = "提示：讀取線上試算表失敗，已自動切換為離線名冊。";
             }
         }
 
