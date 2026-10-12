@@ -306,7 +306,7 @@
     <div id="receipt-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-btn" onclick="closeModal()">×</button>
-            <div style="font-size:1.5rem; color:#731e0f; font-weight:bold; text-align:center;">繳費紀錄證明</div>
+            <div style="font-size:1.5rem; color:#731e0f; font-weight:bold; text-align:center;">2027 年度繳費紀錄證明</div>
             
             <div class="receipt-card">
                 <div class="receipt-header-info">
@@ -330,45 +330,44 @@
         const SHEET_ID = '1hgDVzXdVWF8jyB3uok9sZrlN4Dc14CFFpnUR5BBxvmE';
         let allMembersData = {};
 
-        // 離線備用名單
         const fallbackData = {
             "第一組": [
-                { name: "王惠玉", "2026": "", "2027": "27-0005" },
-                { name: "李興農", "2026": "", "2027": "" },
-                { name: "陳葉", "2026": "", "2027": "" },
-                { name: "翁秀月", "2026": "", "2027": "" },
-                { name: "楊春棗", "2026": "", "2027": "27-0012" },
-                { name: "張秀祝", "2026": "", "2027": "" },
-                { name: "蔡曉梅", "2026": "", "2027": "" },
-                { name: "林敬堯", "2026": "", "2027": "" },
-                { name: "何依鈴", "2026": "", "2027": "" },
-                { name: "黃菳棠", "2026": "", "2027": "27-0001" },
-                { name: "蔡勝男", "2026": "", "2027": "" },
-                { name: "王福義", "2026": "", "2027": "" },
-                { name: "盧采絨", "2026": "", "2027": "" },
-                { name: "郭秋蘭", "2026": "", "2027": "27-0020" }
+                { name: "王惠玉", "2027": "27-0005" },
+                { name: "李興農", "2027": "" },
+                { name: "陳葉", "2027": "" },
+                { name: "翁秀月", "2027": "" },
+                { name: "楊春棗", "2027": "27-0012" },
+                { name: "張秀祝", "2027": "" },
+                { name: "蔡曉梅", "2027": "" },
+                { name: "林敬堯", "2027": "" },
+                { name: "何依鈴", "2027": "" },
+                { name: "黃菳棠", "2027": "27-0001" },
+                { name: "蔡勝男", "2027": "" },
+                { name: "王福義", "2027": "" },
+                { name: "盧采絨", "2027": "" },
+                { name: "郭秋蘭", "2027": "27-0020" }
             ],
             "第七組": [
-                { name: "鄭素蘭", "2026": "", "2027": "" },
-                { name: "耿智光", "2026": "", "2027": "" },
-                { name: "耿智秋", "2026": "", "2027": "" },
-                { name: "耿智琳", "2026": "", "2027": "" },
-                { name: "林俊孝", "2026": "", "2027": "" },
-                { name: "程慕洵", "2026": "", "2027": "" },
-                { name: "賴姿蓉", "2026": "", "2027": "" },
-                { name: "徐桂英", "2026": "", "2027": "" },
-                { name: "蔣月鳳", "2026": "", "2027": "" },
-                { name: "何玉佩", "2026": "", "2027": "" },
-                { name: "林秀真", "2026": "", "2027": "" },
-                { name: "吳佳穎", "2026": "", "2027": "" },
-                { name: "林春成", "2026": "", "2027": "" },
-                { name: "江茂亮", "2026": "", "2027": "0002761901" },
-                { name: "蕭立華", "2026": "", "2027": "" },
-                { name: "林瓊瑤", "2026": "", "2027": "" },
-                { name: "蔡慧娟", "2026": "", "2027": "" },
-                { name: "詹勝雄", "2026": "", "2027": "" },
-                { name: "吳湘鈞", "2026": "", "2027": "" },
-                { name: "吳宜臻", "2026": "", "2027": "" }
+                { name: "鄭素蘭", "2027": "" },
+                { name: "耿智光", "2027": "" },
+                { name: "耿智秋", "2027": "" },
+                { name: "耿智琳", "2027": "" },
+                { name: "林俊孝", "2027": "" },
+                { name: "程慕洵", "2027": "" },
+                { name: "賴姿蓉", "2027": "" },
+                { name: "徐桂英", "2027": "" },
+                { name: "蔣月鳳", "2027": "" },
+                { name: "何玉佩", "2027": "" },
+                { name: "林秀真", "2027": "" },
+                { name: "吳佳穎", "2027": "" },
+                { name: "林春成", "2027": "" },
+                { name: "江茂亮", "2027": "0002761901" },
+                { name: "蕭立華", "2027": "" },
+                { name: "林瓊瑤", "2027": "" },
+                { name: "蔡慧娟", "2027": "" },
+                { name: "詹勝雄", "2027": "" },
+                { name: "吳湘鈞", "2027": "" },
+                { name: "吳宜臻", "2027": "" }
             ]
         };
 
@@ -414,7 +413,7 @@
 
                 members.forEach((m, idx) => {
                     const seqNum = idx + 1;
-                    // 只根據 2027 年是否有繳費來判斷是否顯示 🧾
+                    // 只檢查 2027 年是否有繳費紀錄
                     const has2027Record = m["2027"] && m["2027"].trim() !== "";
 
                     const memberDiv = document.createElement('div');
@@ -451,57 +450,45 @@
 
         function openModal(groupName, memberDataStr) {
             const member = JSON.parse(decodeURIComponent(memberDataStr));
-            
-            // 驗證：只有 2027 年有繳費紀錄才能開啟彈窗
-            const has2027Record = member["2027"] && member["2027"].trim() !== "";
-            if (!has2027Record) {
-                return;
-            }
-
             document.getElementById('receipt-group').innerText = groupName;
             document.getElementById('receipt-name').innerText = member.name;
 
             const recordsList = document.getElementById('records-list');
             recordsList.innerHTML = '';
 
-            // 顯示 2026 和 2027 兩年的繳費紀錄
-            ['2026', '2027'].forEach(yr => {
-                const recNo = (member[yr] || '').toString().trim();
-                const recordDiv = document.createElement('div');
-                recordDiv.className = 'year-record';
+            const recNo = member["2027"] ? member["2027"].trim() : "";
+            const recordDiv = document.createElement('div');
+            recordDiv.className = 'year-record';
 
-                if (recNo !== '') {
-                    const photoBtnId = `btn-${yr}-${Date.now()}-${Math.random()}`;
-                    recordDiv.innerHTML = `
-                        <div class="year-title">
-                            <span>${yr} 年度</span>
-                            <span class="status-paid">已繳納 ✓</span>
-                        </div>
-                        <div class="receipt-detail">單據編號：<strong>${recNo}</strong></div>
-                        <a id="${photoBtnId}" class="photo-btn" target="_blank" style="display:none;">📷 查看收據照片</a>
-                    `;
+            if (recNo !== "") {
+                const photoBtnId = `btn-2027-${encodeURIComponent(member.name)}`;
+                recordDiv.innerHTML = `
+                    <div class="year-title">
+                        <span>2027 年度</span>
+                        <span class="status-paid">已繳納 ✓</span>
+                    </div>
+                    <div class="receipt-detail">單據編號：<strong>${recNo}</strong></div>
+                    <a id="${photoBtnId}" class="photo-btn" target="_blank" style="display:none;">📷 查看收據照片</a>
+                `;
 
-                    // 尋找對應年份的收據照片
-                    findReceiptImage(yr, member.name, function(validPath) {
-                        if (validPath) {
-                            const btn = document.getElementById(photoBtnId);
-                            if (btn) {
-                                btn.href = validPath;
-                                btn.style.display = 'inline-block';
-                            }
+                findReceiptImage("2027", member.name, function(validPath) {
+                    if (validPath) {
+                        const btn = document.getElementById(photoBtnId);
+                        if (btn) {
+                            btn.href = validPath;
+                            btn.style.display = 'inline-block';
                         }
-                    });
-                } else {
-                    recordDiv.innerHTML = `
-                        <div class="year-title">
-                            <span>${yr} 年度</span>
-                            <span class="status-unpaid">尚未繳納</span>
-                        </div>
-                    `;
-                }
-
-                recordsList.appendChild(recordDiv);
-            });
+                    }
+                });
+            } else {
+                recordDiv.innerHTML = `
+                    <div class="year-title">
+                        <span>2027 年度</span>
+                        <span class="status-unpaid">尚未繳納</span>
+                    </div>
+                `;
+            }
+            recordsList.appendChild(recordDiv);
 
             document.getElementById('receipt-modal').style.display = 'flex';
         }
@@ -518,7 +505,6 @@
         });
 
         async function loadData() {
-            // 先顯示離線名單
             allMembersData = fallbackData;
             render(allMembersData);
 
@@ -535,7 +521,6 @@
                 if (!res.ok) throw new Error("網路連線異常");
                 const rawText = await res.text();
 
-                // 提取 JSON 資料
                 const jsonMatch = rawText.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/);
                 if (!jsonMatch || !jsonMatch[1]) throw new Error("格式解析失敗");
 
@@ -545,25 +530,17 @@
 
                 rows.forEach(row => {
                     if (!row.c) return;
-
-                    // Google Sheet 欄位對應：
-                    // c[0] = A 欄（組別）
-                    // c[1] = B 欄（姓名）
-                    // c[2] = C 欄（2026 繳費編號）
-                    // c[3] = D 欄（2027 繳費編號）
-
                     const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
-                    const nameVal = row.c[1] ? (row.c[1].v || "").toString().trim() : "";
-                    const r2026 = row.c[2] ? (row.c[2].v || "").toString().trim() : "";
-                    const r2027 = row.c[3] ? (row.c[3].v || "").toString().trim() : "";
+                    const nameVal = row.c[2] ? row.c[2].v.toString().trim() : (row.c[1] ? row.c[1].v.toString().trim() : "");
+                    // 只取 2027 年的繳費編號（根據你的 Google Sheet 欄位位置調整）
+                    // 預設：c[4] 為 2027 年，c[3] 為 2026 年
+                    const r2027 = row.c[4] ? (row.c[4].v || "").toString().trim() : "";
 
-                    // 略過標題列或空值
                     if (!groupVal || !nameVal || groupVal.includes("組別") || nameVal.includes("姓名")) return;
 
                     if (!dynamicGroups[groupVal]) dynamicGroups[groupVal] = [];
                     dynamicGroups[groupVal].push({
                         name: nameVal,
-                        "2026": r2026,
                         "2027": r2027
                     });
                 });
@@ -572,8 +549,6 @@
                     allMembersData = dynamicGroups;
                     render(allMembersData);
                     document.getElementById('status-bar').innerText = `● 資料已即時同步（最後更新時間：${new Date().toLocaleTimeString()}）`;
-                } else {
-                    document.getElementById('status-bar').innerText = "提示：試算表內無有效名單資料，維持預設名冊。";
                 }
             } catch (err) {
                 console.warn("無法取得線上試算表，維持顯示內建名冊：", err);
