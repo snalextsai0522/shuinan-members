@@ -355,14 +355,10 @@
         // 存放會員繳費資料（從 Google Sheet 抓取時用）
         let memberRecordsMap = {};
 
-        const EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG'];
-
-        function normalizeFileName(name) {
-            return String(name).trim().replace(/[^\w\u4E00-\u9FFF]/g, '_');
-        }
+        // 支援各種副檔名組合（區分大小寫）
+        const EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.gif', '.GIF', '.webp', '.WEBP'];
 
         function findReceiptImage(year, memberName, callback) {
-            const safeName = normalizeFileName(memberName);
             let index = 0;
 
             function tryNext() {
@@ -372,15 +368,17 @@
                 }
 
                 const ext = EXTENSIONS[index++];
-                const safePath = `receipts/${year}-${safeName}${ext}`;
+                // 用原始名字（不要正規化），因為 GitHub 上就是這樣存的
+                const testPath = `receipts/${year}-${memberName}${ext}`;
                 const img = new Image();
                 img.onload = function () {
-                    callback(safePath);
+                    callback(testPath);
                 };
                 img.onerror = function () {
                     tryNext();
                 };
-                img.src = `${safePath}?t=${Date.now()}`;
+                // 加時間戳避免快取
+                img.src = `${testPath}?t=${Date.now()}`;
             }
 
             tryNext();
@@ -414,7 +412,7 @@
 
                     // 檢查是否有繳費紀錄
                     const memberRecord = memberRecordsMap[name];
-                    const hasRecord = memberRecord && (memberRecord['2026'] || memberRecord['2027'] || memberRecord['2028']);
+                    const hasRecord = memberRecord && (memberRecord['2026'] || memberRecord['2027']);
 
                     if (hasRecord) {
                         const nameLink = document.createElement('span');
@@ -458,7 +456,8 @@
             const recordsList = document.getElementById('records-list');
             recordsList.innerHTML = '';
 
-            ['2026', '2027', '2028'].forEach(yr => {
+            // 只顯示 2026 和 2027（根據你的 Google Sheet）
+            ['2026', '2027'].forEach(yr => {
                 const recNo = (memberRecord[yr] || '').toString().trim();
                 const recordDiv = document.createElement('div');
                 recordDiv.className = 'year-record';
@@ -549,7 +548,7 @@
                 rows.forEach(row => {
                     if (!row.c) return;
                     // A欄位(c[0]): 組別；C欄位(c[2])或B欄位(c[1]): 姓名
-                    // D、E、F欄位(c[3], c[4], c[5]): 2026、2027、2028繳費編號
+                    // D、E欄位(c[3], c[4]): 2026、2027繳費編號
                     const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
                     let nameVal = "";
 
@@ -565,16 +564,14 @@
                     if (!dynamicGroups[groupVal]) dynamicGroups[groupVal] = [];
                     dynamicGroups[groupVal].push(nameVal);
 
-                    // 記錄繳費資料
+                    // 記錄繳費資料（只記錄 2026 和 2027）
                     const r2026 = row.c[3] ? (row.c[3].v || "").toString().trim() : "";
                     const r2027 = row.c[4] ? (row.c[4].v || "").toString().trim() : "";
-                    const r2028 = row.c[5] ? (row.c[5].v || "").toString().trim() : "";
 
-                    if (r2026 || r2027 || r2028) {
+                    if (r2026 || r2027) {
                         memberRecordsMap[nameVal] = {
                             '2026': r2026,
-                            '2027': r2027,
-                            '2028': r2028
+                            '2027': r2027
                         };
                     }
                 });
