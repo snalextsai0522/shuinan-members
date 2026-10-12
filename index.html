@@ -124,7 +124,6 @@
             display: inline-block;
         }
 
-        /* 彈窗遮罩 */
         .modal-overlay {
             display: none;
             position: fixed;
@@ -288,7 +287,6 @@
     </style>
 </head>
 <body>
-
     <header>
         <h1>國際佛光會中華總會中一區水湳分會<br>會員分組一覽表</h1>
         <p class="motto">◎ 佛光普照 法水長流 ｜ 歡喜同行 同圓種智 ◎</p>
@@ -299,23 +297,18 @@
     </div>
     <div id="status-bar" class="status-bar">資料同步中...</div>
 
-    <div class="container" id="groups-container">
-        <!-- 分組名單動態渲染 -->
-    </div>
+    <div class="container" id="groups-container"></div>
 
-    <!-- 歷年繳費紀錄彈窗 -->
     <div id="receipt-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
-            <button class="close-btn" onclick="closeModal()">×</button>
+            <button class="close-btn" type="button" onclick="closeModal()">×</button>
             <div style="font-size:1.5rem; color:#731e0f; font-weight:bold; text-align:center;">會員繳費紀錄證明</div>
-            
+
             <div class="receipt-card">
                 <div class="receipt-header-info">
                     <span id="receipt-group"></span> ‧ <span id="receipt-name"></span> 會員
                 </div>
-                <div id="records-list">
-                    <!-- 動態帶入歷年紀錄 -->
-                </div>
+                <div id="records-list"></div>
             </div>
 
             <p style="margin-top: 15px; color: #666; font-size: 0.95rem; text-align:center;">（點選右上方 ✕ 或點擊背景任意處可關閉）</p>
@@ -328,11 +321,9 @@
     </footer>
 
     <script>
-        // 【重要】請將此處替換為您的 Google 試算表 ID
         const SHEET_ID = '1hgDVzXdVWF8jyB3uok9sZrlN4Dc14CFFpnUR5BBxvmE';
         let allMembersData = {};
 
-        // 離線預設備用資料
         const fallbackData = {
             "第一組": [
                 { name: "王惠玉", "2026": "26-0001", "2027": "27-0005" },
@@ -374,36 +365,51 @@
             ]
         };
 
-        // 自動嘗試常見副檔名清單（不論大小寫）
         const EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG'];
 
+        function normalizeFileName(name) {
+            return String(name).trim().replace(/[^\w\u4E00-\u9FFF]/g, '_');
+        }
+
         function findReceiptImage(year, memberName, callback) {
+            const safeName = normalizeFileName(memberName);
             let index = 0;
+
             function tryNext() {
                 if (index >= EXTENSIONS.length) {
                     callback(null);
                     return;
                 }
+
                 const ext = EXTENSIONS[index++];
-                const testPath = `receipts/${year}-${memberName}${ext}`;
+                const safePath = `receipts/${year}-${safeName}${ext}`;
                 const img = new Image();
-                img.src = testPath;
-                img.onload = function() {
-                    callback(testPath);
+                img.onload = function () {
+                    callback(safePath);
                 };
-                img.onerror = function() {
+                img.onerror = function () {
                     tryNext();
                 };
+                img.src = `${safePath}?t=${Date.now()}`;
             }
+
             tryNext();
         }
 
         function render(groups) {
             const container = document.getElementById('groups-container');
+            if (!container) return;
             container.innerHTML = '';
+
+            if (!groups || typeof groups !== 'object' || Object.keys(groups).length === 0) {
+                console.warn('無有效的分組資料');
+                return;
+            }
 
             Object.keys(groups).forEach(groupName => {
                 const members = groups[groupName];
+                if (!Array.isArray(members) || members.length === 0) return;
+
                 const card = document.createElement('div');
                 card.className = 'card';
 
@@ -415,26 +421,36 @@
                 const body = document.createElement('div');
                 body.className = 'card-body';
 
-                members.forEach((m, idx) => {
+                members.forEach((member, idx) => {
+                    if (!member || typeof member !== 'object' || !member.name) return;
+
                     const seqNum = idx + 1;
-                    const hasAnyRecord = (m["2026"] && m["2026"].trim() !== "") || 
-                                         (m["2027"] && m["2027"].trim() !== "") || 
-                                         (m["2028"] && m["2028"].trim() !== "");
+                    const recordValue = (member['2026'] || member['2027'] || member['2028'] || '').toString().trim();
+                    const hasAnyRecord = recordValue !== '';
 
                     const memberDiv = document.createElement('div');
                     memberDiv.className = 'member';
 
+                    const numSpan = document.createElement('span');
+                    numSpan.className = 'num';
+                    numSpan.textContent = `${seqNum}.`;
+                    memberDiv.appendChild(numSpan);
+
                     if (hasAnyRecord) {
-                        const memberDataStr = encodeURIComponent(JSON.stringify(m));
-                        memberDiv.innerHTML = `
-                            <span class="num">${seqNum}.</span>
-                            <span class="name-link" onclick="openModal('${groupName}', '${memberDataStr}')">${m.name}</span>
-                        `;
+                        const nameLink = document.createElement('span');
+                        nameLink.className = 'name-link';
+                        nameLink.textContent = member.name;
+                        nameLink.addEventListener('click', () => {
+                            openModal(groupName, JSON.stringify(member));
+                        });
+                        memberDiv.appendChild(nameLink);
                     } else {
-                        memberDiv.innerHTML = `
-                            <span class="num">${seqNum}.</span><span class="name-text">${m.name}</span>
-                        `;
+                        const nameText = document.createElement('span');
+                        nameText.className = 'name-text';
+                        nameText.textContent = member.name;
+                        memberDiv.appendChild(nameText);
                     }
+
                     body.appendChild(memberDiv);
                 });
 
@@ -453,74 +469,85 @@
             container.appendChild(blessingCard);
         }
 
-        // 開啟歷年明細彈窗
         function openModal(groupName, memberDataStr) {
-            const member = JSON.parse(decodeURIComponent(memberDataStr));
-            document.getElementById('receipt-group').innerText = groupName;
-            document.getElementById('receipt-name').innerText = member.name;
+            try {
+                const member = JSON.parse(memberDataStr);
+                if (!member || !member.name) return;
 
-            const recordsList = document.getElementById('records-list');
-            recordsList.innerHTML = '';
+                document.getElementById('receipt-group').textContent = groupName;
+                document.getElementById('receipt-name').textContent = member.name;
 
-            const years = ["2026", "2027", "2028"];
-            years.forEach(yr => {
-                const recNo = member[yr] ? member[yr].trim() : "";
-                const recordDiv = document.createElement('div');
-                recordDiv.className = 'year-record';
+                const recordsList = document.getElementById('records-list');
+                recordsList.innerHTML = '';
 
-                if (recNo !== "") {
-                    const photoBtnId = `btn-${yr}-${encodeURIComponent(member.name)}`;
-                    recordDiv.innerHTML = `
-                        <div class="year-title">
-                            <span>${yr} 年度</span>
-                            <span class="status-paid">已繳納 ✓</span>
-                        </div>
-                        <div class="receipt-detail">單據編號：<strong>${recNo}</strong></div>
-                        <a id="${photoBtnId}" class="photo-btn" target="_blank" style="display:none;">📷 查看收據照片</a>
-                    `;
+                ['2026', '2027', '2028'].forEach(yr => {
+                    const recNo = (member[yr] || '').toString().trim();
+                    const recordDiv = document.createElement('div');
+                    recordDiv.className = 'year-record';
 
-                    // 自動探測各種副檔名檔案是否存在
-                    findReceiptImage(yr, member.name, function(validPath) {
-                        if (validPath) {
+                    if (recNo !== '') {
+                        const photoBtnId = `btn-${yr}-${Date.now()}-${Math.random()}`;
+                        recordDiv.innerHTML = `
+                            <div class="year-title">
+                                <span>${yr} 年度</span>
+                                <span class="status-paid">已繳納 ✓</span>
+                            </div>
+                            <div class="receipt-detail">單據編號：<strong>${recNo}</strong></div>
+                            <a id="${photoBtnId}" class="photo-btn" target="_blank" style="display:none;">📷 查看收據照片</a>
+                        `;
+
+                        findReceiptImage(yr, member.name, function (validPath) {
+                            if (!validPath) return;
                             const btn = document.getElementById(photoBtnId);
                             if (btn) {
                                 btn.href = validPath;
                                 btn.style.display = 'inline-block';
                             }
-                        }
-                    });
-                } else {
-                    recordDiv.innerHTML = `
-                        <div class="year-title">
-                            <span>${yr} 年度</span>
-                            <span class="status-unpaid">尚未繳納</span>
-                        </div>
-                    `;
-                }
-                recordsList.appendChild(recordDiv);
-            });
+                        });
+                    } else {
+                        recordDiv.innerHTML = `
+                            <div class="year-title">
+                                <span>${yr} 年度</span>
+                                <span class="status-unpaid">尚未繳納</span>
+                            </div>
+                        `;
+                    }
 
-            document.getElementById('receipt-modal').style.display = 'flex';
+                    recordsList.appendChild(recordDiv);
+                });
+
+                document.getElementById('receipt-modal').style.display = 'flex';
+            } catch (err) {
+                console.error('開啟 Modal 失敗:', err);
+            }
         }
 
         function closeModal(event) {
-            if (event && event.target && event.target.id !== 'receipt-modal' && !event.target.classList.contains('close-btn')) {
-                return;
+            const modal = document.getElementById('receipt-modal');
+            if (!modal) return;
+
+            if (event) {
+                const target = event.target;
+                if (target !== modal && !target.closest('.close-btn')) {
+                    return;
+                }
             }
-            document.getElementById('receipt-modal').style.display = 'none';
+
+            modal.style.display = 'none';
         }
 
-        window.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') closeModal();
+        window.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                closeModal({ target: document.getElementById('receipt-modal') });
+            }
         });
 
-        // 動態即時同步 Google 試算表
         async function loadData() {
             allMembersData = fallbackData;
             render(allMembersData);
 
             if (!SHEET_ID || SHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-                document.getElementById('status-bar').innerText = "提示：目前顯示預設離線名冊。";
+                document.getElementById('status-bar').innerText = '提示：目前顯示預設離線名冊。';
                 return;
             }
 
@@ -529,32 +556,37 @@
 
             try {
                 const res = await fetch(gvizUrl);
-                if (!res.ok) throw new Error("網路連線異常");
-                const rawText = await res.text();
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+                const rawText = await res.text();
                 const jsonMatch = rawText.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/);
-                if (!jsonMatch || !jsonMatch[1]) throw new Error("格式解析失敗");
+                if (!jsonMatch || !jsonMatch[1]) throw new Error('格式解析失敗');
 
                 const data = JSON.parse(jsonMatch[1]);
+                if (!data.table || !Array.isArray(data.table.rows)) {
+                    throw new Error('試算表結構異常');
+                }
+
                 const rows = data.table.rows;
                 const dynamicGroups = {};
 
                 rows.forEach(row => {
-                    if (!row.c) return;
-                    const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
-                    const nameVal = row.c[2] ? row.c[2].v.toString().trim() : (row.c[1] ? row.c[1].v.toString().trim() : "");
-                    const r2026 = row.c[3] ? (row.c[3].v || "").toString().trim() : "";
-                    const r2027 = row.c[4] ? (row.c[4].v || "").toString().trim() : "";
-                    const r2028 = row.c[5] ? (row.c[5].v || "").toString().trim() : "";
+                    if (!row.c || row.c.length < 6) return;
 
-                    if (!groupVal || !nameVal || groupVal.includes("組別") || nameVal.includes("姓名")) return;
+                    const groupVal = (row.c[0]?.v || '').toString().trim();
+                    const nameVal = (row.c[2]?.v || row.c[1]?.v || '').toString().trim();
+                    const r2026 = (row.c[3]?.v || '').toString().trim();
+                    const r2027 = (row.c[4]?.v || '').toString().trim();
+                    const r2028 = (row.c[5]?.v || '').toString().trim();
+
+                    if (!groupVal || !nameVal || groupVal.includes('組別') || nameVal.includes('姓名')) return;
 
                     if (!dynamicGroups[groupVal]) dynamicGroups[groupVal] = [];
                     dynamicGroups[groupVal].push({
                         name: nameVal,
-                        "2026": r2026,
-                        "2027": r2027,
-                        "2028": r2028
+                        '2026': r2026,
+                        '2027': r2027,
+                        '2028': r2028
                     });
                 });
 
@@ -562,10 +594,12 @@
                     allMembersData = dynamicGroups;
                     render(allMembersData);
                     document.getElementById('status-bar').innerText = `● 資料已即時同步（最後更新時間：${new Date().toLocaleTimeString()}）`;
+                } else {
+                    throw new Error('未取得有效的試算表資料');
                 }
             } catch (err) {
-                console.warn("無法取得線上試算表，維持顯示內建名冊：", err);
-                document.getElementById('status-bar').innerText = "提示：讀取線上試算表失敗，已自動切換為離線名冊。";
+                console.warn('無法取得線上試算表，維持預設離線名冊：', err);
+                document.getElementById('status-bar').innerText = '提示：讀取線上試算表失敗，已自動切換為離線名冊。';
             }
         }
 
