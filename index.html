@@ -294,7 +294,7 @@
     </header>
 
     <div class="intro">
-        ※ 姓名帶有 🧾 標籤者表示已有繳費紀錄，點擊名字可查閱 2027 年度繳費證明！ ※
+        ※ 姓名帶有 🧾 標籤者表示已有 2027 年度繳費紀錄，點擊名字可查閱繳費證明！ ※
     </div>
     <div id="status-bar" class="status-bar">資料同步中...</div>
 
@@ -413,12 +413,13 @@
 
                 members.forEach((m, idx) => {
                     const seqNum = idx + 1;
-                    const hasRecord = m["2027"] && m["2027"].trim() !== "";
+                    // 只檢查 2027 年是否有繳費紀錄
+                    const has2027Record = m["2027"] && m["2027"].trim() !== "";
 
                     const memberDiv = document.createElement('div');
                     memberDiv.className = 'member';
 
-                    if (hasRecord) {
+                    if (has2027Record) {
                         const memberDataStr = encodeURIComponent(JSON.stringify(m));
                         memberDiv.innerHTML = `
                             <span class="num">${seqNum}.</span>
@@ -531,7 +532,9 @@
                     if (!row.c) return;
                     const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
                     const nameVal = row.c[2] ? row.c[2].v.toString().trim() : (row.c[1] ? row.c[1].v.toString().trim() : "");
-                    const r2027 = row.c[3] ? (row.c[3].v || "").toString().trim() : "";
+                    // 只取 2027 年的繳費編號（根據你的 Google Sheet 欄位位置調整）
+                    // 預設：c[4] 為 2027 年，c[3] 為 2026 年
+                    const r2027 = row.c[4] ? (row.c[4].v || "").toString().trim() : "";
 
                     if (!groupVal || !nameVal || groupVal.includes("組別") || nameVal.includes("姓名")) return;
 
