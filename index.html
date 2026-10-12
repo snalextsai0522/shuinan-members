@@ -71,7 +71,7 @@
 
         .card-header {
             background-color: #f2e9d4;
-            color: #73230f;
+            color: #731e0f;
             padding: 14px;
             font-size: 1.55rem;
             font-weight: bold;
@@ -117,11 +117,20 @@
             cursor: pointer;
         }
 
-        .name-link::after {
-            content: "🧾";
-            font-size: 0.9rem;
+        /* 皇冠符號樣式 */
+        .crown-icon {
+            font-size: 1.15rem;
             margin-left: 4px;
-            display: inline-block;
+            vertical-align: middle;
+            cursor: default;
+        }
+
+        /* 2027 收據符號樣式 */
+        .receipt-icon {
+            font-size: 0.95rem;
+            margin-left: 4px;
+            vertical-align: middle;
+            cursor: pointer;
         }
 
         .modal-overlay {
@@ -295,7 +304,7 @@
     </header>
 
     <div class="intro">
-        ※ 各位長輩與會員，您可以用手指在手機螢幕上「放大」觀看您的組別！※ 姓名帶有 🧾 標籤者可點擊查閱繳費紀錄 ※
+        ※ 各位長輩與會員，您可以用手指在手機螢幕上「放大」觀看您的組別！※ 姓名帶有底線者可點擊查閱繳費紀錄，帶有 🧾 標籤者表示已完成 2027 年度繳費 ※
     </div>
     <div id="status-bar" class="status-bar">資料同步中...</div>
 
@@ -303,7 +312,7 @@
         <!-- 名單由腳本動態載入 -->
     </div>
 
-    <!-- 歷年繳費紀錄彈窗 -->
+    <!-- 繳費紀錄彈窗 -->
     <div id="receipt-modal" class="modal-overlay" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="close-btn" type="button" onclick="closeModal()">×</button>
@@ -326,10 +335,8 @@
     </footer>
 
     <script>
-        // 【重要】請將此處替換為您的 Google 試算表 ID
         const SHEET_ID = '1hgDVzXdVWF8jyB3uok9sZrlN4Dc14CFFpnUR5BBxvmE';
 
-        // 離線備用名單（原本的純名字格式，沒有繳費資料）
         const fallbackData = {
             "第一組": ["王惠玉", "李興農", "陳葉", "翁秀月", "楊春棗", "張秀祝", "蔡曉梅", "林敬堯", "何依鈴", "黃菳棠", "蔡勝男", "王福義", "盧采絨", "郭秋蘭"],
             "第二組": ["王露英", "陳怡", "王台英", "林金月", "沈佑蓮", "陳成添", "林秋錦", "楊張金華", "劉繡菊", "陳玲玲", "林怡璇", "李淑麗", "魏美貴"],
@@ -352,12 +359,11 @@
             "第十九組": ["譚莉", "張宇文", "張宇昇", "曾婉婷", "徐振筠", "詹沐澄", "李美惠", "李佩芬", "鍾淑芬", "張容溱"]
         };
 
-        // 存放會員繳費資料（從 Google Sheet 抓取時用）
         let memberRecordsMap = {};
 
-        // 支援各種副檔名組合（區分大小寫）
         const EXTENSIONS = ['.jpg', '.JPG', '.jpeg', '.JPEG', '.png', '.PNG', '.gif', '.GIF', '.webp', '.WEBP'];
 
+        // 完整絕對路徑探測收據
         function findReceiptImage(year, memberName, callback) {
             let index = 0;
 
@@ -368,8 +374,7 @@
                 }
 
                 const ext = EXTENSIONS[index++];
-                // 用原始名字（不要正規化），因為 GitHub 上就是這樣存的
-                const testPath = `receipts/${year}-${memberName}${ext}`;
+                const testPath = `https://raw.githubusercontent.com/snalextsai0522/shuinan-members/main/receipts/${year}-${memberName}${ext}`;
                 const img = new Image();
                 img.onload = function () {
                     callback(testPath);
@@ -377,7 +382,6 @@
                 img.onerror = function () {
                     tryNext();
                 };
-                // 加時間戳避免快取
                 img.src = `${testPath}?t=${Date.now()}`;
             }
 
@@ -405,16 +409,21 @@
                     const memberDiv = document.createElement('div');
                     memberDiv.className = 'member';
 
+                    // 序號
                     const numSpan = document.createElement('span');
                     numSpan.className = 'num';
                     numSpan.innerText = `${idx + 1}.`;
                     memberDiv.appendChild(numSpan);
 
-                    // 檢查是否有繳費紀錄
                     const memberRecord = memberRecordsMap[name];
-                    const hasRecord = memberRecord && (memberRecord['2026'] || memberRecord['2027']);
+                    // 條件 1：超連結判定（2026 有繳 或 2027 有繳皆可點開）
+                    const hasAnyRecord = memberRecord && (
+                        (memberRecord['2026'] && memberRecord['2026'].trim() !== '') ||
+                        (memberRecord['2027'] && memberRecord['2027'].trim() !== '')
+                    );
 
-                    if (hasRecord) {
+                    // 姓名節點
+                    if (hasAnyRecord) {
                         const nameLink = document.createElement('span');
                         nameLink.className = 'name-link';
                         nameLink.textContent = name;
@@ -427,6 +436,28 @@
                         nameText.className = 'name-text';
                         nameText.textContent = name;
                         memberDiv.appendChild(nameText);
+                    }
+
+                    // 條件 3：第一位為組長，名字後方緊接皇冠符號 👑
+                    if (idx === 0) {
+                        const crownSpan = document.createElement('span');
+                        crownSpan.className = 'crown-icon';
+                        crownSpan.title = '組長';
+                        crownSpan.textContent = '👑';
+                        memberDiv.appendChild(crownSpan);
+                    }
+
+                    // 條件 1：符號呈現嚴格依據 2027 是否有繳費
+                    const is2027Paid = memberRecord && memberRecord['2027'] && memberRecord['2027'].trim() !== '';
+                    if (is2027Paid) {
+                        const receiptSpan = document.createElement('span');
+                        receiptSpan.className = 'receipt-icon';
+                        receiptSpan.title = '已完成 2027 年度繳費';
+                        receiptSpan.textContent = '🧾';
+                        receiptSpan.addEventListener('click', () => {
+                            openModal(groupName, name, memberRecord);
+                        });
+                        memberDiv.appendChild(receiptSpan);
                     }
 
                     body.appendChild(memberDiv);
@@ -456,7 +487,6 @@
             const recordsList = document.getElementById('records-list');
             recordsList.innerHTML = '';
 
-            // 只顯示 2026 和 2027（根據你的 Google Sheet）
             ['2026', '2027'].forEach(yr => {
                 const recNo = (memberRecord[yr] || '').toString().trim();
                 const recordDiv = document.createElement('div');
@@ -516,16 +546,14 @@
             }
         });
 
-        // 動態即時同步函式（無 CORS 阻擋）
         async function loadData() {
             render(fallbackData);
 
-            if (!SHEET_ID || SHEET_ID === 'YOUR_SPREADSHEET_ID_HERE') {
-                document.getElementById('status-bar').innerText = "提示：目前顯示預設離線名冊（尚未設定試算表 ID）";
+            if (!SHEET_ID) {
+                document.getElementById('status-bar').innerText = "提示：目前顯示預設離線名冊。";
                 return;
             }
 
-            // 加上時間戳記避免瀏覽器快取舊資料
             const timestamp = new Date().getTime();
             const gvizUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&t=${timestamp}`;
 
@@ -534,7 +562,6 @@
                 if (!res.ok) throw new Error("網路連線異常");
                 const rawText = await res.text();
 
-                // 移除 Google GViz 包裝字樣，精確截取 JSON 字串
                 const jsonMatch = rawText.match(/google\.visualization\.Query\.setResponse\(([\s\S\w]+)\);/);
                 if (!jsonMatch || !jsonMatch[1]) {
                     throw new Error("試算表回傳格式錯誤，請確認已設定『知道連結的任何人均可檢視』");
@@ -547,8 +574,6 @@
 
                 rows.forEach(row => {
                     if (!row.c) return;
-                    // A欄位(c[0]): 組別；C欄位(c[2])或B欄位(c[1]): 姓名
-                    // D、E欄位(c[3], c[4]): 2026、2027繳費編號
                     const groupVal = row.c[0] ? (row.c[0].v || "").toString().trim() : "";
                     let nameVal = "";
 
@@ -558,13 +583,11 @@
                         nameVal = row.c[1].v.toString().trim();
                     }
 
-                    // 略過標題列（如包含「組別」或「姓名」字樣）
                     if (!groupVal || !nameVal || groupVal.includes("組別") || nameVal.includes("姓名")) return;
 
                     if (!dynamicGroups[groupVal]) dynamicGroups[groupVal] = [];
                     dynamicGroups[groupVal].push(nameVal);
 
-                    // 記錄繳費資料（只記錄 2026 和 2027）
                     const r2026 = row.c[3] ? (row.c[3].v || "").toString().trim() : "";
                     const r2027 = row.c[4] ? (row.c[4].v || "").toString().trim() : "";
 
